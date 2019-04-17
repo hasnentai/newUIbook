@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:bookabook/screens/detail page/details.dart';
 import 'package:bookabook/screens/service/category_service.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:bookabook/screens/service/productService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart';
+import 'package:flutter_swiper/flutter_swiper.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:html/parser.dart' show parse;
 
 class IndexScreen extends StatefulWidget {
   final String email;
@@ -29,7 +31,7 @@ class _IndexScreenState extends State<IndexScreen> {
   List<CatService> category;
   List<CatService> filterdCategory;
 
-  var scrollController = ScrollController(initialScrollOffset: 50.0);
+  var scrollController = ScrollController(initialScrollOffset: 0.0);
 
   Future<void> getAllItems() async {
     var client = new http.Client();
@@ -39,12 +41,17 @@ class _IndexScreenState extends State<IndexScreen> {
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         var list = data as List;
-        productList = list
-            .map<ProductService>((json) => ProductService.fromJson(json))
-            .toList();
-        filteredProducts = productList
-            .where((data) => data.status == "publish" && data.totalSales > 1)
-            .toList();
+        setState(() {
+          productList = list
+              .map<ProductService>((json) => ProductService.fromJson(json))
+              .toList();
+          filteredProducts = productList
+              .where((data) => data.status == "publish" && data.totalSales > 1)
+              .toList();
+              filteredProducts.shuffle();
+        });
+      } else {
+        print('Somthing went wrong');
       }
     } catch (e) {
       print(e);
@@ -61,11 +68,15 @@ class _IndexScreenState extends State<IndexScreen> {
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         var list = data as List;
-        category =
-            list.map<CatService>((json) => CatService.fromJson(json)).toList();
-        filterdCategory = category
-            .where((data) => data.count > 0 && data.catName != "Uncategorized")
-            .toList();
+        setState(() {
+          category = list
+              .map<CatService>((json) => CatService.fromJson(json))
+              .toList();
+          filterdCategory = category
+              .where(
+                  (data) => data.count > 0 && data.catName != "Uncategorized")
+              .toList();
+        });
       }
     } catch (e) {
       print(e);
@@ -77,8 +88,12 @@ class _IndexScreenState extends State<IndexScreen> {
   void initState() {
     email = widget.email;
     displayName = widget.displayName;
-    this.getAllItems();
-    this.getAllCategory();
+    setState(() {
+      this.getAllCategory();
+      this.getAllItems();
+      
+    });
+
     super.initState();
   }
 
@@ -134,7 +149,8 @@ class _IndexScreenState extends State<IndexScreen> {
         print('hi');
       }
     });
-    filteredProducts.shuffle();
+
+
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
           statusBarColor: Color(0xFFFF900F),
@@ -171,6 +187,7 @@ class _IndexScreenState extends State<IndexScreen> {
         ),
       ),
       appBar: new AppBar(
+        elevation: 0,
         title: new Text(
           'Home',
           style: new TextStyle(color: Colors.white),
@@ -196,192 +213,228 @@ class _IndexScreenState extends State<IndexScreen> {
         ],
         centerTitle: false,
       ),
-      body: CustomScrollView(
-        controller: scrollController,
-        slivers: <Widget>[
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Container(height: 200.0, child: customSlider(context)),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: new Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: new Text(
-                        'Browse By Categories',
-                        style: TextStyle(
-                            fontSize: 20.0,
-                            color: Color(0xFFFF900F),
-                            fontWeight: FontWeight.w600),
+      body: !(filteredProducts == null)
+          ? CustomScrollView(
+              controller: scrollController,
+              slivers: <Widget>[
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    Container(height: 200.0, child: customSlider(context)),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: new Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: new Text(
+                              'Browse By Categories',
+                              style: TextStyle(
+                                  fontSize: 20.0,
+                                  color: Color(0xFFFF900F),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                                decoration: new BoxDecoration(
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      new BoxShadow(
+                                        color: Colors.black45,
+                                        offset: new Offset(1.0, 1.0),
+                                        blurRadius: 6.0,
+                                      )
+                                    ],
+                                    borderRadius:
+                                        new BorderRadius.circular(50.0),
+                                    border: new Border.all(
+                                        color: Color(0xFFFF900F))),
+                                child: Icon(
+                                  Icons.arrow_drop_down_circle,
+                                  color: Color(0xFFFF900F),
+                                )),
+                          )
+                        ],
+                      ),
+                    ),
+                    new Container(
+                      height: 60.0,
+                      child: new ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: filterdCategory.length,
+                        itemBuilder: (context, i) {
+                          return Column(
+                            children: <Widget>[
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 15.0, left: 8.0, right: 8.0),
+                                child: Container(
+                                    decoration: new BoxDecoration(
+                                        color: Color(0xFFFF900F),
+                                        boxShadow: [
+                                          new BoxShadow(
+                                            color: Colors.black45,
+                                            offset: new Offset(1.0, 1.0),
+                                            blurRadius: 4.0,
+                                          )
+                                        ],
+                                        borderRadius:
+                                            new BorderRadius.circular(5.0),
+                                        border: new Border.all(
+                                            color: Colors.white)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: new Text(
+                                        filterdCategory[i].catName,
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: new TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15.0,
+                                            color: Colors.white),
+                                      ),
+                                    )),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                          decoration: new BoxDecoration(
-                              color: Colors.white,
-                              boxShadow: [
-                                new BoxShadow(
-                                  color: Colors.black45,
-                                  offset: new Offset(1.0, 1.0),
-                                  blurRadius: 6.0,
-                                )
-                              ],
-                              borderRadius: new BorderRadius.circular(50.0),
-                              border: new Border.all(color: Color(0xFFFF900F))),
-                          child: Icon(
-                            Icons.arrow_drop_down_circle,
-                            color: Color(0xFFFF900F),
-                          )),
-                    )
-                  ],
+                      child: new Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: new Text(
+                              'Listing Popular Rentals',
+                              style: TextStyle(
+                                  fontSize: 20.0,
+                                  color: Color(0xFFFF900F),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Container(
+                                decoration: new BoxDecoration(
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      new BoxShadow(
+                                        color: Colors.black45,
+                                        offset: new Offset(1.0, 1.0),
+                                        blurRadius: 6.0,
+                                      )
+                                    ],
+                                    borderRadius:
+                                        new BorderRadius.circular(50.0),
+                                    border: new Border.all(
+                                        color: Color(0xFFFF900F))),
+                                child: Icon(
+                                  Icons.arrow_drop_down_circle,
+                                  color: Color(0xFFFF900F),
+                                )),
+                          )
+                        ],
+                      ),
+                    ),
+                  ]),
                 ),
-              ),
-              new Container(
-                height: 60.0,
-                child: new ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: filterdCategory.length,
-                  itemBuilder: (context, i) {
+                SliverGrid.count(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.58,
+                  mainAxisSpacing: 1.0,
+                  crossAxisSpacing: 1.0,
+                  children: filteredProducts.map((item) {
                     return Column(
                       children: <Widget>[
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 15.0, left: 8.0, right: 8.0),
-                          child: Container(
-                              decoration: new BoxDecoration(
-                                  color: Color(0xFFFF900F),
-                                  boxShadow: [
-                                    new BoxShadow(
-                                      color: Colors.black45,
-                                      offset: new Offset(1.0, 1.0),
-                                      blurRadius: 4.0,
-                                    )
-                                  ],
-                                  borderRadius: new BorderRadius.circular(5.0),
-                                  border: new Border.all(color: Colors.white)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: new Text(
-                                  filterdCategory[i].catName,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: new TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15.0,
-                                      color: Colors.white),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => DetailPage(
+                                      bookAttributes: item.attri,
+                                      avgRating:double.parse(item.averageRating),
+                                      sortDec: parse(item.sortDescription).body.text,
+                                        purchaseNote: parse(item.purchaseNote).body.text,
+                                        bookName: item.name,
+                                        bookDescription: item.description,
+                                        bookImage: item.images[0].src,
+                                        priceHtml: item.priceHtml)));
+                          },
+                          child: new Column(
+                            children: <Widget>[
+                              Container(
+                                height: 180.0,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Hero(
+                                    tag: item.name,
+                                    child: new Container(
+                                      width: 130.0,
+                                      decoration: new BoxDecoration(
+                                          color: Colors.black26,
+                                          boxShadow: [
+                                            new BoxShadow(
+                                              color: Colors.black45,
+                                              offset: new Offset(1.0, 1.0),
+                                              blurRadius: 4.0,
+                                            )
+                                          ],
+                                          borderRadius:
+                                              new BorderRadius.circular(15.0),
+                                          image: new DecorationImage(
+                                              fit: BoxFit.cover,
+                                              image: new NetworkImage(
+                                                  item.images[0].src))),
+                                    ),
+                                  ),
                                 ),
-                              )),
-                        ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0),
+                                child: Container(
+                                    width: 140.0,
+                                    child: new Text(
+                                      item.name,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: new TextStyle(
+                                          fontWeight: FontWeight.w400,
+                                          fontSize: 16.0),
+                                    )),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10.0),
+                                child: Container(
+                                    width: 140.0,
+                                    child: new Text(
+                                      item.priceHtml,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: new TextStyle(
+                                          color: Colors.black87,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.0,
+                                          fontStyle: FontStyle.normal),
+                                    )),
+                              ),
+                            ],
+                          ),
+                        )
                       ],
                     );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: new Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: new Text(
-                        'Listing Popular Rentals',
-                        style: TextStyle(
-                            fontSize: 20.0,
-                            color: Color(0xFFFF900F),
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Container(
-                          decoration: new BoxDecoration(
-                              color: Colors.white,
-                              boxShadow: [
-                                new BoxShadow(
-                                  color: Colors.black45,
-                                  offset: new Offset(1.0, 1.0),
-                                  blurRadius: 6.0,
-                                )
-                              ],
-                              borderRadius: new BorderRadius.circular(50.0),
-                              border: new Border.all(color: Color(0xFFFF900F))),
-                          child: Icon(
-                            Icons.arrow_drop_down_circle,
-                            color: Color(0xFFFF900F),
-                          )),
-                    )
-                  ],
-                ),
-              ),
-            ]),
-          ),
-          SliverGrid.count(
-            crossAxisCount: 3,
-            childAspectRatio: 0.58,
-            mainAxisSpacing: 1.0,
-            crossAxisSpacing: 1.0,
-            children: filteredProducts.map((item) {
-              return Column(
-                children: <Widget>[
-                  Container(
-                    height: 180.0,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: new Container(
-                        width: 130.0,
-                        decoration: new BoxDecoration(
-                            color: Colors.black26,
-                            boxShadow: [
-                              new BoxShadow(
-                                color: Colors.black45,
-                                offset: new Offset(1.0, 1.0),
-                                blurRadius: 4.0,
-                              )
-                            ],
-                            borderRadius: new BorderRadius.circular(15.0),
-                            image: new DecorationImage(
-                                fit: BoxFit.cover,
-                                image: new NetworkImage(item.images[0].src))),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Container(
-                        width: 140.0,
-                        child: new Text(
-                          item.name,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: new TextStyle(
-                              fontWeight: FontWeight.w400, fontSize: 16.0),
-                        )),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: Container(
-                        width: 140.0,
-                        child: new Text(
-                          item.priceHtml,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: new TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13.0,
-                              fontStyle: FontStyle.normal),
-                        )),
-                  ),
-                ],
-              );
-            }).toList(),
-          )
-          //topRatedBooks(context)
-        ],
-      ),
+                  }).toList(),
+                )
+                //topRatedBooks(context)
+              ],
+            )
+          : new Center(child: new CircularProgressIndicator()),
     );
   }
 }

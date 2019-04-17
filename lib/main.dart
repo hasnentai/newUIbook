@@ -1,5 +1,4 @@
-
-import 'package:bookabook/screens/home-page/home.dart';
+import 'package:bookabook/screens/detail page/details.dart';
 import 'package:bookabook/screens/home-page/index.dart';
 import 'package:bookabook/screens/login-page/login.dart';
 import 'package:bookabook/screens/practice/practice.dart';
@@ -13,7 +12,8 @@ var routes = <String, WidgetBuilder>{
   "/login": (BuildContext context) => Login(),
   '/register': (BuildContext context) => Register(),
   "/myhome": (BuildContext context) => MyHomePage(),
-  "/mypractice":(BuildContext context)=> MyPractice(),
+  "/mypractice": (BuildContext context) => MyPractice(),
+  "/details": (BuildContext context) => DetailPage(),
 };
 
 void main() => runApp(MyApp());
@@ -22,12 +22,11 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-          statusBarColor: Color(0xFFFF900F),
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Color(0xFFFF900F),
 
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarColor:Color(0xFFFF900F), //bottom bar color
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFFFF900F), //bottom bar color
       systemNavigationBarIconBrightness: Brightness.light, //bottom bar icons
     ));
     return MaterialApp(
@@ -63,8 +62,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (token != null) {
       String _email = prefs.getString('email');
       String _displayName = prefs.getString('displayName');
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (context) => IndexScreen(_email, _displayName)));
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => IndexScreen(_email, _displayName)));
     }
   }
 
