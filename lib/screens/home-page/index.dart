@@ -7,9 +7,9 @@ import 'package:bookabook/screens/service/productService.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
+import 'package:html/parser.dart' show parse;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:html/parser.dart' show parse;
 
 class IndexScreen extends StatefulWidget {
   final String email;
@@ -48,7 +48,7 @@ class _IndexScreenState extends State<IndexScreen> {
           filteredProducts = productList
               .where((data) => data.status == "publish" && data.totalSales > 1)
               .toList();
-              filteredProducts.shuffle();
+          filteredProducts.shuffle();
         });
       } else {
         print('Somthing went wrong');
@@ -91,7 +91,6 @@ class _IndexScreenState extends State<IndexScreen> {
     setState(() {
       this.getAllCategory();
       this.getAllItems();
-      
     });
 
     super.initState();
@@ -145,11 +144,7 @@ class _IndexScreenState extends State<IndexScreen> {
       double maxScroll = scrollController.position.maxScrollExtent;
       double currentScroll = scrollController.position.pixels;
       double delta = 200.0; // or something else..
-      if (maxScroll - currentScroll <= delta) {
-        print('hi');
-      }
     });
-
 
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -354,10 +349,15 @@ class _IndexScreenState extends State<IndexScreen> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => DetailPage(
-                                      bookAttributes: item.attri,
-                                      avgRating:double.parse(item.averageRating),
-                                      sortDec: parse(item.sortDescription).body.text,
-                                        purchaseNote: parse(item.purchaseNote).body.text,
+                                        id: item.id,
+                                        bookAttributes: item.attri,
+                                        avgRating:
+                                            double.parse(item.averageRating),
+                                        sortDec: parse(item.sortDescription)
+                                            .body
+                                            .text,
+                                        purchaseNote:
+                                            parse(item.purchaseNote).body.text,
                                         bookName: item.name,
                                         bookDescription: item.description,
                                         bookImage: item.images[0].src,
